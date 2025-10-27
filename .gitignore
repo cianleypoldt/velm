@@ -1,0 +1,79 @@
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Build directories
+.cache/
+build/
+bin/
+obj/
+Debug/
+Release/
+x64/
+x86/
+
+# IDE specific files
+.vs/
+.vscode/
+*.swp
+*.swo
+*.user
+*.suo
+*.ncb
+*.sdf
+*.opensdf
+*.VC.db
+*.VC.opendb
+ipch/
+.idea/
+*.iml
+CMakeLists.txt.user
+cmake-build-*/
+
+# Dependencies
+vcpkg_installed/
+packages/
+vendor/
+
+# Generated files
+moc_*.cpp
+qrc_*.cpp
+ui_*.h
+*.qm
+
+#Development
+dev/
+scripts/build.sh
+scripts/test.sh
+scripts/flatten.py
+scripts/clang-tidy.sh
+docs/mvp.txt

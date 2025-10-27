@@ -1,0 +1,297 @@
+name: CI tests
+
+on: [push, pull_request]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.os }}-${{ matrix.compiler }}
+    runs-on: ${{ matrix.os }}
+    # Shared environment for caching/ccache settings to speed repeated builds
+    env:
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        compiler: [gcc, clang, msvc]
+        exclude:
+          - os: ubuntu-latest
+            compiler: msvc
+          - os: macos-latest
+            compiler: msvc
+          - os: windows-latest
+            compiler: gcc
+          - os: windows-latest
+            compiler: clang
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          submodules: "recursive"
+          fetch-depth: 0
+
+      - name: Cache ccache (Linux/macOS)
+        if: matrix.os != 'windows-latest'
+        uses: actions/cache@v3
+        with:
+          path: ~/.ccache
+          key: ${{ runner.os }}-ccache-${{ hashFiles('**/CMakeLists.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-ccache-
+
+      - name: Configure ccache (Linux/macOS)
+        if: matrix.os != 'windows-latest'
+        run: |
+          set -euo pipefail
+          # Ensure ccache dir exists and set a reasonable max size to improve cache hits
+          mkdir -p "${CCACHE_DIR}"
+          chmod 700 "${CCACHE_DIR}"
+          # Enable ccache's preprocessed output mode which improves cache-hit reliability for clang
+          export CCACHE_CPP2=1
+          # Set max size for ccache to persist across runs (best-effort)
+          if command -v ccache >/dev/null 2>&1; then
+            ccache --max-size=5G || ccache -M 5G || true
+            ccache -s || true
+          fi
+
+      - name: Cache vcpkg (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: actions/cache@v3
+        with:
+          # Cache the full vcpkg tree (including bootstrap/build artifacts) to speed subsequent runs
+          path: |
+            C:\vcpkg
+            C:\vcpkg\installed
+          key: ${{ runner.os }}-vcpkg-${{ hashFiles('**/CMakeLists.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-
+
+      - name: Install dependencies (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          set -euo pipefail
+          sudo apt-get update -y -qq
+          sudo apt-get install -y --no-install-recommends \
+            ninja-build ccache build-essential cmake pkg-config \
+            clang lld \
+            libhdf5-dev libwayland-dev wayland-protocols libxkbcommon-dev libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libglew-dev libgl1-mesa-dev libegl1-mesa-dev libgles2-mesa-dev libboost-all-dev libomp-dev libfftw3-dev libjpeg-dev libpng-dev libfreetype6-dev libharfbuzz-dev libicu-dev zlib1g-dev libbz2-dev liblzma-dev
+          # Ensure ccache directory exists and has correct permissions
+          mkdir -p ~/.ccache
+          chmod 700 ~/.ccache
+          # Ensure ccache max size is configured early
+          if command -v ccache >/dev/null 2>&1; then
+            ccache --max-size=5G || true
+          fi
+
+      - name: Install dependencies (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          set -euo pipefail
+          brew update --quiet
+          # Install llvm (provides clang/lld) to improve clang builds; llvm install can be large but speeds linking with lld
+          brew install hdf5 ninja ccache llvm || true
+          # Ensure ccache path
+          mkdir -p ~/.ccache
+          if command -v ccache >/dev/null 2>&1; then
+            ccache --max-size=5G || true
+          fi
+
+      - name: Install dependencies (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (-not (Test-Path C:\vcpkg)) {
+            git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
+            & C:\vcpkg\bootstrap-vcpkg.bat
+          }
+          C:\vcpkg\vcpkg.exe install hdf5[cpp]:x64-windows
+          # keep installed packages cached by the actions/cache step
+
+      - name: Configure (GCC)
+        if: matrix.compiler == 'gcc'
+        run: |
+          set -euo pipefail
+          which h5cc || true
+          which h5c++ || true
+          mkdir -p build
+          # Prefer using CMake presets for local dev parity if present; fall back to explicit configure
+          if cmake --help | grep -q -- '--preset'; then
+            cmake --preset ci -S . -B build || cmake --preset release -S . -B build || \
+            cmake -S . -B build -G Ninja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_C_COMPILER=gcc \
+              -DCMAKE_CXX_COMPILER=g++ \
+              -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+              -DHDF5_FIND_DEBUG=OFF \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          else
+            # Use Ninja and ccache launcher; export compile commands for tooling and faster incremental builds
+            cmake -S . -B build -G Ninja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_C_COMPILER=gcc \
+              -DCMAKE_CXX_COMPILER=g++ \
+              -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+              -DHDF5_FIND_DEBUG=OFF \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          fi
+          # Note: consider using actions/setup-gcc to pin GCC versions for reproducibility
+
+      - name: Configure (Clang)
+        if: matrix.compiler == 'clang'
+        run: |
+          set -euo pipefail
+          which h5cc || true
+          which h5c++ || true
+          mkdir -p build
+          # Use ccache's improved preprocessed-mode for clang and force using ccache-wrapped clang for better cache hits
+          export CCACHE_CPP2=1
+          export CC="ccache clang"
+          export CXX="ccache clang++"
+          # If lld is available (installed on Linux), prefer it to speed up linking for clang builds
+          EXTRA_LINK_FLAGS=""
+          if [ "$RUNNER_OS" = "Linux" ] && command -v lld >/dev/null 2>&1; then
+            EXTRA_LINK_FLAGS='-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld -DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=lld'
+          fi
+          # Prefer using CMake presets if available, otherwise configure explicitly
+          if cmake --help | grep -q -- '--preset'; then
+            cmake --preset ci -S . -B build || cmake --preset release -S . -B build || \
+            cmake -S . -B build -G Ninja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_C_COMPILER=clang \
+              -DCMAKE_CXX_COMPILER=clang++ \
+              -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+              -DHDF5_FIND_DEBUG=OFF \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ${EXTRA_LINK_FLAGS}
+          else
+            cmake -S . -B build -G Ninja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_C_COMPILER=clang \
+              -DCMAKE_CXX_COMPILER=clang++ \
+              -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+              -DHDF5_FIND_DEBUG=OFF \
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ${EXTRA_LINK_FLAGS}
+          fi
+          # Note: consider using actions/setup-clang to pin Clang/LLVM versions for reproducibility
+
+      - name: Configure (MSVC)
+        if: matrix.compiler == 'msvc'
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          mkdir -Force build
+          # If project defines CMakePresets.json provide a chance to use them for local parity
+          if (Test-Path -Path "CMakePresets.json") {
+            # Validate that CMakePresets.json is non-empty and valid JSON before calling cmake --preset
+            $presetsPath = "CMakePresets.json"
+            $usePresets = $false
+            try {
+              $content = Get-Content -Path $presetsPath -Raw -ErrorAction Stop
+              if (-not $content -or $content.Trim().Length -eq 0) {
+                Write-Host "CMakePresets.json is empty - skipping presets"
+              } else {
+                try {
+                  $json = $content | ConvertFrom-Json -ErrorAction Stop
+                  # Check for common key names added in CMake presets schema (case-insensitive check)
+                  if ($json.PSObject.Properties.Name -contains 'configurePresets' -or $json.PSObject.Properties.Name -contains 'ConfigurePresets') {
+                    $usePresets = $true
+                  } else {
+                    Write-Host "CMakePresets.json does not contain configurePresets - skipping presets"
+                  }
+                } catch {
+                  Write-Host "CMakePresets.json is not valid JSON - skipping presets: $($_.Exception.Message)"
+                }
+              }
+            } catch {
+              Write-Host "Failed to read CMakePresets.json - skipping presets: $($_.Exception.Message)"
+            }
+
+            if ($usePresets) {
+              Write-Host "Using CMake presets if available (ci/release)"
+              # try common preset names, fall back to explicit configure
+              try {
+                cmake --preset ci -S . -B build --log-level=VERBOSE
+              } catch {
+                try {
+                  cmake --preset release -S . -B build --log-level=VERBOSE
+                } catch {
+                  cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" -DUSE_HDF5_CPP_API=ON -DCMAKE_BUILD_TYPE=Release -DGLFW_BUILD_TESTS=OFF -DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_DOCS=OFF
+                }
+              }
+            } else {
+              # Fallback: explicit configure when presets are absent/invalid
+              cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" -DUSE_HDF5_CPP_API=ON -DCMAKE_BUILD_TYPE=Release -DGLFW_BUILD_TESTS=OFF -DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_DOCS=OFF
+            }
+          } else {
+            # Disable building GLFW tests/examples/docs to avoid failures in third-party test targets
+            cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" -DUSE_HDF5_CPP_API=ON -DCMAKE_BUILD_TYPE=Release -DGLFW_BUILD_TESTS=OFF -DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_DOCS=OFF
+          }
+          # Note: consider using actions/setup-msbuild or similar to pin MSVC/MSBuild versions
+
+      - name: Build
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            # Use CMake's --parallel option to drive MSBuild and avoid passing bare '/m' which can produce invalid switches
+            NPROC=${NUMBER_OF_PROCESSORS:-2}
+            cmake --build build --config Release --parallel ${NPROC}
+          else
+            # Parallel build using all available cores; prefer invoking ninja directly to avoid cmake overhead
+            NPROC=$(nproc 2>/dev/null || sysctl -n hw.ncpu)
+            if command -v ninja >/dev/null 2>&1; then
+              ninja -C build -j${NPROC}
+            else
+              cmake --build build -- -j${NPROC}
+            fi
+          fi
+
+      - name: Upload build artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.os }}-${{ matrix.compiler }}
+          path: build
+          retention-days: 7
+
+      - name: Run Tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd build
+          # Prefer ctest for parallel test execution if available
+          if command -v ctest >/dev/null 2>&1; then
+            if [ "$RUNNER_OS" = "Windows" ]; then
+              ctest -C Release --output-on-failure
+            else
+              NPROC=$(nproc 2>/dev/null || sysctl -n hw.ncpu)
+              ctest --output-on-failure -j$(( NPROC > 2 ? NPROC : 2 ))
+            fi
+          else
+            # Fallback to direct binary execution
+            if [ "$RUNNER_OS" = "Windows" ]; then
+              ./bin/Release/VelmVT_tests.exe
+            else
+              ./bin/VelmVT_tests
+            fi
+          fi
+
+      - name: Upload test artifacts and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tests-${{ matrix.os }}-${{ matrix.compiler }}
+          path: |
+            build/Testing
+            build/**/test-*.log
+            build/**/Testing/**/*
+          retention-days: 7

@@ -1,0 +1,101 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 19,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "default",
+      "displayName": "Default (Ninja, RelWithDebInfo)",
+      "description": "Configure with Ninja generator and RelWithDebInfo. Enables testing and dev targets.",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "VELM_ENABLE_TESTING": "ON",
+        "VELM_BUILD_DEV": "ON",
+        "VELM_ENABLE_WINDOWING": "ON",
+        "VELM_ENABLE_HDF5": "ON",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "debug",
+      "displayName": "Debug (Ninja)",
+      "description": "Debug configuration using Ninja generator. Useful for development and stepping through code.",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "VELM_ENABLE_TESTING": "ON",
+        "VELM_BUILD_DEV": "ON",
+        "VELM_ENABLE_WINDOWING": "ON",
+        "VELM_ENABLE_HDF5": "ON",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "release-make",
+      "displayName": "Release (Unix Makefiles)",
+      "description": "Release configuration using Unix Makefiles generator. Useful when Ninja is not available.",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/release-make",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "VELM_ENABLE_TESTING": "OFF",
+        "VELM_BUILD_DEV": "OFF",
+        "VELM_ENABLE_WINDOWING": "ON",
+        "VELM_ENABLE_HDF5": "ON",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "ninja",
+      "displayName": "Build (Ninja, default)",
+      "description": "Build using the 'default' configure preset (Ninja). Uses the generator chosen at configure time.",
+      "configurePreset": "default",
+      "jobs": 0,
+      "targets": []
+    },
+    {
+      "name": "ninja-debug",
+      "displayName": "Build (Ninja, Debug)",
+      "description": "Build the debug configure preset using Ninja.",
+      "configurePreset": "debug",
+      "jobs": 0,
+      "targets": []
+    },
+    {
+      "name": "make-release",
+      "displayName": "Build (Makefiles, Release)",
+      "description": "Build the release-make configure preset using Unix Makefiles.",
+      "configurePreset": "release-make",
+      "jobs": 8,
+      "targets": []
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "default",
+      "displayName": "Run tests (serial)",
+      "description": "Run ctest after configuring with the 'default' preset. Runs tests serially and prints output on failure.",
+      "configurePreset": "default",
+      "buildPreset": "ninja",
+      "configuration": "RelWithDebInfo",
+      "ctestArgs": ["--output-on-failure"]
+    },
+    {
+      "name": "parallel",
+      "displayName": "Run tests (parallel)",
+      "description": "Run ctest in parallel (8 jobs).",
+      "configurePreset": "default",
+      "buildPreset": "ninja",
+      "configuration": "RelWithDebInfo",
+      "ctestArgs": ["-j", "8", "--output-on-failure"]
+    }
+  ]
+}
