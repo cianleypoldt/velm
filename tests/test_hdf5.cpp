@@ -1,12 +1,13 @@
-#include "velm/hdf5.h"
-#include "velm/ndarray.h"
+#ifdef VELM_ENABLE_HDF5
+#    include "velm/hdf5.h"
+#    include "velm/ndarray.h"
 
-#include <gtest/gtest.h>
+#    include <gtest/gtest.h>
 
-#include <complex>
-#include <filesystem>
-#include <string>
-#include <vector>
+#    include <complex>
+#    include <filesystem>
+#    include <string>
+#    include <vector>
 
 namespace fs = std::filesystem;
 
@@ -232,3 +233,4 @@ TEST_F(HDF5Test, NdarrayIntegration) {
         FAIL() << "Exception during ndarray integration test: " << e.what();
     }
 }
+#endif
