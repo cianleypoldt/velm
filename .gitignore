@@ -72,8 +72,4 @@ ui_*.h
 
 #Development
 dev/
-scripts/build.sh
-scripts/test.sh
-scripts/flatten.py
-scripts/clang-tidy.sh
 docs/mvp.txt

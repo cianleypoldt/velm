@@ -18,6 +18,7 @@
       "inherits": "base",
       "displayName": "Developer Debug",
       "description": "Local debug build with developer utilities and testing",
+      "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "VELM_BUILD_DEV": "ON",
@@ -30,6 +31,7 @@
       "inherits": "base",
       "displayName": "Developer Release",
       "description": "Optimized local release build with developer utilities and testing",
+      "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "VELM_BUILD_DEV": "ON",
@@ -43,6 +45,7 @@
       "inherits": "base",
       "displayName": "CI Release",
       "description": "Continuous Integration release build with tests",
+      "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "VELM_BUILD_DEV": "OFF",
@@ -56,6 +59,7 @@
       "inherits": "base",
       "displayName": "CI Sanitizer",
       "description": "AddressSanitizer and UndefinedBehaviorSanitizer enabled build for CI",
+      "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "VELM_BUILD_DEV": "OFF",
@@ -71,6 +75,7 @@
       "inherits": "base",
       "displayName": "CI Coverage",
       "description": "Instrumented build for coverage reporting in CI",
+      "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "VELM_BUILD_DEV": "OFF",
@@ -87,6 +92,7 @@
       "inherits": "base",
       "displayName": "Distribution Release",
       "description": "Minimal release build for packaging and installation (no tests, no dev tools)",
+      "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "VELM_BUILD_DEV": "OFF",

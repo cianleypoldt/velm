@@ -13,6 +13,7 @@ jobs:
     # Shared environment for caching/ccache settings to speed repeated builds
     env:
       CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CMAKE_PRESET: ci-release
     strategy:
       fail-fast: false
       matrix:
@@ -117,17 +118,13 @@ jobs:
         if: matrix.compiler == 'gcc' || matrix.compiler == 'clang'
         run: |
           set -euo pipefail
-          which h5cc || true
-          which h5c++ || true
           mkdir -p build
 
-          # Set compiler-specific variables and preset name based on compiler
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
-            cmake --preset ci-release -S . -B build
+            cmake --preset ${{ env.CMAKE_PRESET }} -S . -B build -DCMAKE_CXX_FLAGS="-w"
           else
-            # Clang configuration
             export CCACHE_CPP2=1
-            cmake --preset ci-release -S . -B build
+            cmake --preset ${{ env.CMAKE_PRESET }} -S . -B build -DCMAKE_CXX_FLAGS="-w"
           fi
 
       - name: Configure (MSVC)
@@ -136,13 +133,13 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           mkdir -Force build
-          cmake --preset ci-release -S . -B build --log-level=VERBOSE
+          cmake --preset ${{ env.CMAKE_PRESET }} -S . -B build --log-level=VERBOSE -DCMAKE_CXX_FLAGS="/w"
 
       - name: Build
         shell: bash
         run: |
           set -euo pipefail
-          cmake --build --preset ci-release-build
+          cmake --build build --preset ${{ env.CMAKE_PRESET }}-build
 
       - name: Upload build artifacts
         if: always()
@@ -156,7 +153,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cd build
+          cd build/${{ env.CMAKE_PRESET }}
           # Prefer ctest for parallel test execution if available
           if command -v ctest >/dev/null 2>&1; then
             if [ "$RUNNER_OS" = "Windows" ]; then
@@ -168,9 +165,9 @@ jobs:
           else
             # Fallback to direct binary execution
             if [ "$RUNNER_OS" = "Windows" ]; then
-              ./bin/Release/VelmVT_tests.exe
+              ./bin/Release/velm_tests.exe
             else
-              ./bin/VelmVT_tests
+              ./bin/velm_tests
             fi
           fi
 
@@ -180,7 +177,7 @@ jobs:
         with:
           name: tests-${{ matrix.os }}-${{ matrix.compiler }}
           path: |
-            build/Testing
-            build/**/test-*.log
-            build/**/Testing/**/*
+            build/${{ env.CMAKE_PRESET }}/Testing
+            build/${{ env.CMAKE_PRESET }}/test-*.log
+            build/${{ env.CMAKE_PRESET }}/Testing/**/*
           retention-days: 7
