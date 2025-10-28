@@ -54,17 +54,20 @@ endif()
 
 
 
-add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/bgfx.cmake")
 
-if(APPLE)
-    string(REPLACE "-Werror" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
-    string(REPLACE "-Werror" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-    add_compile_options(
+add_compile_options(
         -Wno-error=unused-function
         -Wno-error=unused-variable
         -Wno-error=deprecated-declarations
         -Wno-error=sign-compare
     )
+
+
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/bgfx.cmake")
+
+if(APPLE)
+    string(REPLACE "-Werror" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+    string(REPLACE "-Werror" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 endif()
 
 
