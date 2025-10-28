@@ -52,16 +52,13 @@ if(VELM_ENABLE_WINDOWING)
     add_definitions(-DVELM_ENABLE_WINDOWING)
 endif()
 
+if(APPLE)
+    set(BGFX_WERROR OFF CACHE BOOL "Disable Werror on macOS")
+endif()
+
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/bgfx.cmake")
 
-if(APPLE)
-    target_compile_options(bgfx PRIVATE
-    -Wno-error
-    )
-    target_compile_options(bimg_decode PRIVATE
-    -Wno-error
-    )
-endif()
+
 
 add_subdirectory(src)
 
