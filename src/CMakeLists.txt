@@ -7,7 +7,11 @@ target_include_directories(velm PRIVATE  .)
 target_include_directories(velm PUBLIC ../include)
 target_compile_features(velm PRIVATE cxx_std_17)
 
-find_package(HDF5 REQUIRED COMPONENTS CXX)
+if(VELM_ENABLE_HDF5)
+    find_package(HDF5 REQUIRED COMPONENTS C CXX)
+    target_link_libraries(velm PRIVATE ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES})
+    target_include_directories(velm PRIVATE ${HDF5_INCLUDE_DIRS})
+endif()
 
 target_link_libraries(velm
     PRIVATE
