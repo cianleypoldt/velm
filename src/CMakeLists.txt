@@ -18,7 +18,6 @@ target_link_libraries(velm
         bgfx
         bimg
         bx
-        HDF5::HDF5
 )
 
 if(VELM_ENABLE_WINDOWING)
