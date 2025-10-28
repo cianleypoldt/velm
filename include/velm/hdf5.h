@@ -1,19 +1,20 @@
 #pragma once
+#ifdef VELM_ENABLE_HDF5
 
-#include <cstddef>
-#include <cstring>
-#include <string>
-#include <vector>
+#    include <cstddef>
+#    include <cstring>
+#    include <string>
+#    include <vector>
 
-#ifdef USE_MOCK_HDF5
+#    ifdef USE_MOCK_HDF5
 // Forward declaration for mock implementation
 struct H5FileWrapper;
-#else
+#    else
 // Forward declaration for H5 namespace
 namespace H5 {
 class H5File;
 }
-#endif
+#    endif
 
 namespace velm {
 
@@ -38,12 +39,13 @@ class hdf5_file {
     void load_dataset(void * buffer, const char * name) const;
 
   private:
-#ifdef USE_MOCK_HDF5
+#    ifdef USE_MOCK_HDF5
     H5FileWrapper * file_;
-#else
+#    else
     H5::H5File * file_;
-#endif
+#    endif
     const char * filename_;
 };
 
 }  // namespace velm
+#endif

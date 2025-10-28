@@ -1,9 +1,11 @@
-#include "velm/hdf5.h"
+#ifdef VELM_ENABLE_HDF5
 
-#include <H5Cpp.h>
-#include <H5Fpublic.h>
-#include <H5Ppublic.h>
-#include <H5version.h>
+#    include "velm/hdf5.h"
+
+#    include <H5Cpp.h>
+#    include <H5Fpublic.h>
+#    include <H5Ppublic.h>
+#    include <H5version.h>
 
 namespace velm {
 
@@ -91,3 +93,4 @@ void hdf5_file::load_dataset(void * buffer, const char * name) const {
     }
 }
 };  // namespace velm
+#endif

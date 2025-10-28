@@ -15,7 +15,7 @@ else()
 endif()
 
 option(VELM_ENABLE_WINDOWING "Enable optional windowing integration (GLFW)" ON)
-option(VELM_ENABLE_HDF5 "Enable optional HDF5 support" ON)
+option(VELM_ENABLE_HDF5 "Enable optional HDF5 support" OFF)
 option(VELM_BUILD_DEV "Enable developer utilities" ON)
 option(VELM_ENABLE_SANITIZER "Enable address and undefined behavior sanitizer" OFF)
 option(VELM_ENABLE_COVERAGE "Enable code coverage reporting" OFF)
@@ -45,8 +45,22 @@ if(VELM_ENABLE_COVERAGE)
     endif()
 endif()
 
+if(VELM_ENABLE_HDF5)
+    add_definitions(-DVELM_ENABLE_HDF5)
+endif()
+if(VELM_ENABLE_WINDOWING)
+    add_definitions(-DVELM_ENABLE_WINDOWING)
+endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error")
+if(APPLE)
+    target_compile_options(bgfx PRIVATE
+        -Wno-tautological-constant-compare
+        -Wno-unused-but-set-variable
+    )
+    target_compile_options(bimg_decode PRIVATE
+        -Wno-unused-but-set-variable
+    )
+endif()
 
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/bgfx.cmake")
 

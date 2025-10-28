@@ -146,7 +146,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-${{ matrix.os }}-${{ matrix.compiler }}
-          path: build
+          path: build/${{ env.CMAKE_PRESET }}
           retention-days: 7
 
       - name: Run Tests
@@ -154,21 +154,11 @@ jobs:
         run: |
           set -euo pipefail
           cd build/${{ env.CMAKE_PRESET }}
-          # Prefer ctest for parallel test execution if available
-          if command -v ctest >/dev/null 2>&1; then
-            if [ "$RUNNER_OS" = "Windows" ]; then
-              ctest -C Release --output-on-failure
-            else
-              NPROC=$(nproc 2>/dev/null || sysctl -n hw.ncpu)
-              ctest --output-on-failure -j$(( NPROC > 2 ? NPROC : 2 ))
-            fi
+
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            ./bin/Release/velm_tests.exe
           else
-            # Fallback to direct binary execution
-            if [ "$RUNNER_OS" = "Windows" ]; then
-              ./bin/Release/velm_tests.exe
-            else
-              ./bin/velm_tests
-            fi
+            ./bin/velm_tests
           fi
 
       - name: Upload test artifacts and logs
