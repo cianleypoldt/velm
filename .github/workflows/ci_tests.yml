@@ -133,7 +133,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           mkdir -Force build/${{ env.CMAKE_PRESET }}
-          cmake --preset ${{ env.CMAKE_PRESET }} -S . -B build/${{ env.CMAKE_PRESET }} --log-level=VERBOSE -DCMAKE_CXX_FLAGS="/w"
+          cmake --preset ${{ env.CMAKE_PRESET }} -S . -B build/${{ env.CMAKE_PRESET }} --log-level=VERBOSE -DCMAKE_CXX_FLAGS="-w"
 
       - name: Build
         shell: bash

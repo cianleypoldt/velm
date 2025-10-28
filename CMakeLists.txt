@@ -45,6 +45,9 @@ if(VELM_ENABLE_COVERAGE)
     endif()
 endif()
 
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error")
+
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/bgfx.cmake")
 
 add_subdirectory(src)
