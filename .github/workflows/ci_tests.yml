@@ -113,75 +113,22 @@ jobs:
           C:\vcpkg\vcpkg.exe install hdf5[cpp]:x64-windows
           # keep installed packages cached by the actions/cache step
 
-      - name: Configure (GCC)
-        if: matrix.compiler == 'gcc'
+      - name: Configure (Unix)
+        if: matrix.compiler == 'gcc' || matrix.compiler == 'clang'
         run: |
           set -euo pipefail
           which h5cc || true
           which h5c++ || true
           mkdir -p build
-          # Prefer using CMake presets for local dev parity if present; fall back to explicit configure
-          if cmake --help | grep -q -- '--preset'; then
-            cmake --preset ci -S . -B build || cmake --preset release -S . -B build || \
-            cmake -S . -B build -G Ninja \
-              -DCMAKE_BUILD_TYPE=Release \
-              -DCMAKE_C_COMPILER=gcc \
-              -DCMAKE_CXX_COMPILER=g++ \
-              -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-              -DHDF5_FIND_DEBUG=OFF \
-              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-          else
-            # Use Ninja and ccache launcher; export compile commands for tooling and faster incremental builds
-            cmake -S . -B build -G Ninja \
-              -DCMAKE_BUILD_TYPE=Release \
-              -DCMAKE_C_COMPILER=gcc \
-              -DCMAKE_CXX_COMPILER=g++ \
-              -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-              -DHDF5_FIND_DEBUG=OFF \
-              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-          fi
-          # Note: consider using actions/setup-gcc to pin GCC versions for reproducibility
 
-      - name: Configure (Clang)
-        if: matrix.compiler == 'clang'
-        run: |
-          set -euo pipefail
-          which h5cc || true
-          which h5c++ || true
-          mkdir -p build
-          # Use ccache's improved preprocessed-mode for clang and force using ccache-wrapped clang for better cache hits
-          export CCACHE_CPP2=1
-          export CC="ccache clang"
-          export CXX="ccache clang++"
-          # If lld is available (installed on Linux), prefer it to speed up linking for clang builds
-          EXTRA_LINK_FLAGS=""
-          if [ "$RUNNER_OS" = "Linux" ] && command -v lld >/dev/null 2>&1; then
-            EXTRA_LINK_FLAGS='-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld -DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=lld'
-          fi
-          # Prefer using CMake presets if available, otherwise configure explicitly
-          if cmake --help | grep -q -- '--preset'; then
-            cmake --preset ci -S . -B build || cmake --preset release -S . -B build || \
-            cmake -S . -B build -G Ninja \
-              -DCMAKE_BUILD_TYPE=Release \
-              -DCMAKE_C_COMPILER=clang \
-              -DCMAKE_CXX_COMPILER=clang++ \
-              -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-              -DHDF5_FIND_DEBUG=OFF \
-              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ${EXTRA_LINK_FLAGS}
+          # Set compiler-specific variables and preset name based on compiler
+          if [ "${{ matrix.compiler }}" = "gcc" ]; then
+            cmake --preset ci-release -S . -B build
           else
-            cmake -S . -B build -G Ninja \
-              -DCMAKE_BUILD_TYPE=Release \
-              -DCMAKE_C_COMPILER=clang \
-              -DCMAKE_CXX_COMPILER=clang++ \
-              -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-              -DHDF5_FIND_DEBUG=OFF \
-              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ${EXTRA_LINK_FLAGS}
+            # Clang configuration
+            export CCACHE_CPP2=1
+            cmake --preset ci-release -S . -B build
           fi
-          # Note: consider using actions/setup-clang to pin Clang/LLVM versions for reproducibility
 
       - name: Configure (MSVC)
         if: matrix.compiler == 'msvc'
@@ -189,71 +136,13 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           mkdir -Force build
-          # If project defines CMakePresets.json provide a chance to use them for local parity
-          if (Test-Path -Path "CMakePresets.json") {
-            # Validate that CMakePresets.json is non-empty and valid JSON before calling cmake --preset
-            $presetsPath = "CMakePresets.json"
-            $usePresets = $false
-            try {
-              $content = Get-Content -Path $presetsPath -Raw -ErrorAction Stop
-              if (-not $content -or $content.Trim().Length -eq 0) {
-                Write-Host "CMakePresets.json is empty - skipping presets"
-              } else {
-                try {
-                  $json = $content | ConvertFrom-Json -ErrorAction Stop
-                  # Check for common key names added in CMake presets schema (case-insensitive check)
-                  if ($json.PSObject.Properties.Name -contains 'configurePresets' -or $json.PSObject.Properties.Name -contains 'ConfigurePresets') {
-                    $usePresets = $true
-                  } else {
-                    Write-Host "CMakePresets.json does not contain configurePresets - skipping presets"
-                  }
-                } catch {
-                  Write-Host "CMakePresets.json is not valid JSON - skipping presets: $($_.Exception.Message)"
-                }
-              }
-            } catch {
-              Write-Host "Failed to read CMakePresets.json - skipping presets: $($_.Exception.Message)"
-            }
-
-            if ($usePresets) {
-              Write-Host "Using CMake presets if available (ci/release)"
-              # try common preset names, fall back to explicit configure
-              try {
-                cmake --preset ci -S . -B build --log-level=VERBOSE
-              } catch {
-                try {
-                  cmake --preset release -S . -B build --log-level=VERBOSE
-                } catch {
-                  cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" -DUSE_HDF5_CPP_API=ON -DCMAKE_BUILD_TYPE=Release -DGLFW_BUILD_TESTS=OFF -DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_DOCS=OFF
-                }
-              }
-            } else {
-              # Fallback: explicit configure when presets are absent/invalid
-              cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" -DUSE_HDF5_CPP_API=ON -DCMAKE_BUILD_TYPE=Release -DGLFW_BUILD_TESTS=OFF -DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_DOCS=OFF
-            }
-          } else {
-            # Disable building GLFW tests/examples/docs to avoid failures in third-party test targets
-            cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" -DUSE_HDF5_CPP_API=ON -DCMAKE_BUILD_TYPE=Release -DGLFW_BUILD_TESTS=OFF -DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_DOCS=OFF
-          }
-          # Note: consider using actions/setup-msbuild or similar to pin MSVC/MSBuild versions
+          cmake --preset ci-release -S . -B build --log-level=VERBOSE
 
       - name: Build
         shell: bash
         run: |
           set -euo pipefail
-          if [ "$RUNNER_OS" = "Windows" ]; then
-            # Use CMake's --parallel option to drive MSBuild and avoid passing bare '/m' which can produce invalid switches
-            NPROC=${NUMBER_OF_PROCESSORS:-2}
-            cmake --build build --config Release --parallel ${NPROC}
-          else
-            # Parallel build using all available cores; prefer invoking ninja directly to avoid cmake overhead
-            NPROC=$(nproc 2>/dev/null || sysctl -n hw.ncpu)
-            if command -v ninja >/dev/null 2>&1; then
-              ninja -C build -j${NPROC}
-            else
-              cmake --build build -- -j${NPROC}
-            fi
-          fi
+          cmake --build --preset ci-release-build
 
       - name: Upload build artifacts
         if: always()

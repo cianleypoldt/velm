@@ -1,101 +1,141 @@
 {
-  "version": 3,
-  "cmakeMinimumRequired": {
-    "major": 3,
-    "minor": 19,
-    "patch": 0
-  },
+  "version": 6,
+  "cmakeMinimumRequired": { "major": 3, "minor": 23 },
   "configurePresets": [
     {
-      "name": "default",
-      "displayName": "Default (Ninja, RelWithDebInfo)",
-      "description": "Configure with Ninja generator and RelWithDebInfo. Enables testing and dev targets.",
+      "name": "base",
+      "hidden": true,
       "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-        "VELM_ENABLE_TESTING": "ON",
-        "VELM_BUILD_DEV": "ON",
-        "VELM_ENABLE_WINDOWING": "ON",
-        "VELM_ENABLE_HDF5": "ON",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/bin",
+        "BUILD_TESTING": "ON"
       }
     },
+
     {
-      "name": "debug",
-      "displayName": "Debug (Ninja)",
-      "description": "Debug configuration using Ninja generator. Useful for development and stepping through code.",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/debug",
+      "name": "dev-debug",
+      "inherits": "base",
+      "displayName": "Developer Debug",
+      "description": "Local debug build with developer utilities and testing",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "VELM_ENABLE_TESTING": "ON",
         "VELM_BUILD_DEV": "ON",
-        "VELM_ENABLE_WINDOWING": "ON",
-        "VELM_ENABLE_HDF5": "ON",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+        "ENABLE_SANITIZER": "OFF",
+        "ENABLE_COVERAGE": "OFF"
       }
     },
     {
-      "name": "release-make",
-      "displayName": "Release (Unix Makefiles)",
-      "description": "Release configuration using Unix Makefiles generator. Useful when Ninja is not available.",
-      "generator": "Unix Makefiles",
-      "binaryDir": "${sourceDir}/build/release-make",
+      "name": "dev-release",
+      "inherits": "base",
+      "displayName": "Developer Release",
+      "description": "Optimized local release build with developer utilities and testing",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "VELM_ENABLE_TESTING": "OFF",
+        "VELM_BUILD_DEV": "ON",
+        "ENABLE_SANITIZER": "OFF",
+        "ENABLE_COVERAGE": "OFF"
+      }
+    },
+
+    {
+      "name": "ci-release",
+      "inherits": "base",
+      "displayName": "CI Release",
+      "description": "Continuous Integration release build with tests",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
         "VELM_BUILD_DEV": "OFF",
-        "VELM_ENABLE_WINDOWING": "ON",
-        "VELM_ENABLE_HDF5": "ON",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+        "ENABLE_SANITIZER": "OFF",
+        "ENABLE_COVERAGE": "OFF",
+        "CMAKE_CXX_FLAGS_RELEASE": "-O3 -DNDEBUG -Wall -Wextra -Werror"
+      }
+    },
+    {
+      "name": "ci-sanitize",
+      "inherits": "base",
+      "displayName": "CI Sanitizer",
+      "description": "AddressSanitizer and UndefinedBehaviorSanitizer enabled build for CI",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "VELM_BUILD_DEV": "OFF",
+        "ENABLE_SANITIZER": "ON",
+        "ENABLE_COVERAGE": "OFF",
+        "CMAKE_C_FLAGS_DEBUG": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+        "CMAKE_CXX_FLAGS_DEBUG": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+        "CMAKE_EXE_LINKER_FLAGS_DEBUG": "-fsanitize=address,undefined"
+      }
+    },
+    {
+      "name": "ci-coverage",
+      "inherits": "base",
+      "displayName": "CI Coverage",
+      "description": "Instrumented build for coverage reporting in CI",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "VELM_BUILD_DEV": "OFF",
+        "ENABLE_SANITIZER": "OFF",
+        "ENABLE_COVERAGE": "ON",
+        "CMAKE_C_FLAGS_DEBUG": "--coverage",
+        "CMAKE_CXX_FLAGS_DEBUG": "--coverage",
+        "CMAKE_EXE_LINKER_FLAGS_DEBUG": "--coverage"
+      }
+    },
+
+    {
+      "name": "dist-release",
+      "inherits": "base",
+      "displayName": "Distribution Release",
+      "description": "Minimal release build for packaging and installation (no tests, no dev tools)",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "VELM_BUILD_DEV": "OFF",
+        "BUILD_TESTING": "OFF",
+        "ENABLE_SANITIZER": "OFF",
+        "ENABLE_COVERAGE": "OFF"
       }
     }
   ],
+
   "buildPresets": [
-    {
-      "name": "ninja",
-      "displayName": "Build (Ninja, default)",
-      "description": "Build using the 'default' configure preset (Ninja). Uses the generator chosen at configure time.",
-      "configurePreset": "default",
-      "jobs": 0,
-      "targets": []
-    },
-    {
-      "name": "ninja-debug",
-      "displayName": "Build (Ninja, Debug)",
-      "description": "Build the debug configure preset using Ninja.",
-      "configurePreset": "debug",
-      "jobs": 0,
-      "targets": []
-    },
-    {
-      "name": "make-release",
-      "displayName": "Build (Makefiles, Release)",
-      "description": "Build the release-make configure preset using Unix Makefiles.",
-      "configurePreset": "release-make",
-      "jobs": 8,
-      "targets": []
-    }
+    { "name": "dev-debug-build", "configurePreset": "dev-debug" },
+    { "name": "dev-release-build", "configurePreset": "dev-release" },
+    { "name": "ci-release-build", "configurePreset": "ci-release" },
+    { "name": "ci-sanitize-build", "configurePreset": "ci-sanitize" },
+    { "name": "ci-coverage-build", "configurePreset": "ci-coverage" },
+    { "name": "dist-release-build", "configurePreset": "dist-release" }
   ],
+
   "testPresets": [
     {
-      "name": "default",
-      "displayName": "Run tests (serial)",
-      "description": "Run ctest after configuring with the 'default' preset. Runs tests serially and prints output on failure.",
-      "configurePreset": "default",
-      "buildPreset": "ninja",
-      "configuration": "RelWithDebInfo",
-      "ctestArgs": ["--output-on-failure"]
+      "name": "dev-debug-test",
+      "configurePreset": "dev-debug",
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 4, "stopOnFailure": true }
     },
     {
-      "name": "parallel",
-      "displayName": "Run tests (parallel)",
-      "description": "Run ctest in parallel (8 jobs).",
-      "configurePreset": "default",
-      "buildPreset": "ninja",
-      "configuration": "RelWithDebInfo",
-      "ctestArgs": ["-j", "8", "--output-on-failure"]
+      "name": "dev-release-test",
+      "configurePreset": "dev-release",
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 4, "stopOnFailure": true }
+    },
+    {
+      "name": "ci-release-test",
+      "configurePreset": "ci-release",
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 4, "stopOnFailure": true }
+    },
+    {
+      "name": "ci-sanitize-test",
+      "configurePreset": "ci-sanitize",
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 2, "stopOnFailure": true }
+    },
+    {
+      "name": "ci-coverage-test",
+      "configurePreset": "ci-coverage",
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 2, "stopOnFailure": true }
     }
   ]
 }
