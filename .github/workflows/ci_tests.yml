@@ -139,7 +139,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cmake --build build --preset ${{ env.CMAKE_PRESET }}-build
+          cmake --build build/${{ env.CMAKE_PRESET }} --preset ${{ env.CMAKE_PRESET }}-build
 
       - name: Upload build artifacts
         if: always()

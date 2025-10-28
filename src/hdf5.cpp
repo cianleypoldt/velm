@@ -5,9 +5,6 @@
 #include <H5Ppublic.h>
 #include <H5version.h>
 
-#include <string>
-#include <vector>
-
 namespace velm {
 
 hdf5_file::hdf5_file(const char * file_name) : filename_(strdup(file_name)) {
