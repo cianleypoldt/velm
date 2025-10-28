@@ -56,11 +56,10 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/bgfx.cmake")
 
 if(APPLE)
     target_compile_options(bgfx PRIVATE
-        -Wno-tautological-constant-compare
-        -Wno-unused-but-set-variable
+    -Wno-error
     )
     target_compile_options(bimg_decode PRIVATE
-        -Wno-unused-but-set-variable
+    -Wno-error
     )
 endif()
 
