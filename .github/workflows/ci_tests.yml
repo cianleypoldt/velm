@@ -118,13 +118,13 @@ jobs:
         if: matrix.compiler == 'gcc' || matrix.compiler == 'clang'
         run: |
           set -euo pipefail
-          mkdir -p build
+          mkdir -p build/${{ env.CMAKE_PRESET }}
 
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
-            cmake --preset ${{ env.CMAKE_PRESET }} -S . -B build -DCMAKE_CXX_FLAGS="-w"
+            cmake --preset ${{ env.CMAKE_PRESET }} -S . -B build/${{ env.CMAKE_PRESET }} -DCMAKE_CXX_FLAGS="-w"
           else
             export CCACHE_CPP2=1
-            cmake --preset ${{ env.CMAKE_PRESET }} -S . -B build -DCMAKE_CXX_FLAGS="-w"
+            cmake --preset ${{ env.CMAKE_PRESET }} -S . -B build/${{ env.CMAKE_PRESET }} -DCMAKE_CXX_FLAGS="-w"
           fi
 
       - name: Configure (MSVC)
@@ -132,8 +132,8 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
-          mkdir -Force build
-          cmake --preset ${{ env.CMAKE_PRESET }} -S . -B build --log-level=VERBOSE -DCMAKE_CXX_FLAGS="/w"
+          mkdir -Force build/${{ env.CMAKE_PRESET }}
+          cmake --preset ${{ env.CMAKE_PRESET }} -S . -B build/${{ env.CMAKE_PRESET }} --log-level=VERBOSE -DCMAKE_CXX_FLAGS="/w"
 
       - name: Build
         shell: bash
