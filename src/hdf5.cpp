@@ -1,4 +1,4 @@
-#ifdef VELM_ENABLE_HDF5
+#if 1
 
 #    include "velm/hdf5.h"
 

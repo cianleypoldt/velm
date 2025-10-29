@@ -54,5 +54,6 @@ if [[ -x "$MAIN_BIN" ]]; then
 else
     echo "Executable $MAIN_BIN not found, skipping run"
 fi
+./build/dev-debug/bin/velm_tests
 
 echo "Velm build script finished"

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.24...4.0)
 project("velm" CXX C)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -18,7 +18,7 @@ option(VELM_ENABLE_WINDOWING "Enable optional windowing integration (GLFW)" ON)
 option(VELM_ENABLE_HDF5 "Enable optional HDF5 support" ON)
 option(VELM_BUILD_DEV "Enable developer utilities" ON)
 option(VELM_ENABLE_SANITIZER "Enable address and undefined behavior sanitizer" OFF)
-option(VELM_ENABLE_COVERAGE "Enable code coverage reporting" OFF)
+option(VELM_ENABLE_COVERAGE "Enable code coverage reporting" ON)
 
 message(STATUS "VELM_ENABLE_WINDOWING: ${VELM_ENABLE_WINDOWING}")
 message(STATUS "VELM_ENABLE_HDF5: ${VELM_ENABLE_HDF5}")
@@ -62,8 +62,9 @@ add_compile_options(
         -Wno-error=sign-compare
     )
 
-
+set(CMAKE_EXPORT_COMPILE_COMMANDS OFF)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/bgfx.cmake")
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(APPLE)
     string(REPLACE "-Werror" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
