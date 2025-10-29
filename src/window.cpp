@@ -13,19 +13,15 @@ void test_namespace::open_and_close() {
         return;
     }
 
-    // Request an OpenGL context so we can clear the window to black each frame.
+    // Request an OpenGL context so we can render via bgfx on top of GLFW window.
     glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
-    // Request a reasonably modern context (fallbacks are fine if unavailable).
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    // Attempt to get the primary monitor and its video mode for fullscreen.
     GLFWmonitor *       monitor = glfwGetPrimaryMonitor();
     const GLFWvidmode * mode    = monitor ? glfwGetVideoMode(monitor) : nullptr;
 
-    // Create a fullscreen window when a monitor is available (Hyprland will treat
-    // this as a fullscreen surface). If not available, fall back to a 800x600 window.
     int          width  = mode ? mode->width : 800;
     int          height = mode ? mode->height : 600;
     GLFWwindow * window = glfwCreateWindow(width, height, "hyprland-fullscreen", NULL, nullptr);
@@ -41,7 +37,7 @@ void test_namespace::open_and_close() {
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
 
-    // Main loop: clear to black each frame and poll events until the OS requests close.
+    //                    Main loop: clear to bla                c    k each frame and poll events until the OS requests close.
     while (!glfwWindowShouldClose(window)) {
         // Make sure the viewport matches the current window size (handles compositor resize).
         int fbw = 0, fbh = 0;
