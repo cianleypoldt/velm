@@ -5,23 +5,15 @@ add_library(velm
 
 target_include_directories(velm PRIVATE  .)
 target_include_directories(velm PUBLIC ../include)
-# If the shader build generates headers, include that directory so consumers can
-# reference compiled shader headers (e.g. vs_red.sc.bin.h). The variable
-# `VELM_SHADER_INCLUDE_DIR` is provided by the shaders CMakeLists when available.
-# Additionally define a compile-time macro so C++ sources can detect the presence
-# of generated shader headers and adapt their includes/behavior.
+
 if(DEFINED VELM_SHADER_INCLUDE_DIR)
     target_include_directories(velm PUBLIC ${VELM_SHADER_INCLUDE_DIR})
-    # Consumer code can test `#if defined(VELM_SHADER_HEADERS_AVAILABLE)` to know
-    # whether generated shader headers are available at compile-time.
+
     target_compile_definitions(velm PUBLIC VELM_SHADER_HEADERS_AVAILABLE=1)
 endif()
 
 target_compile_features(velm PRIVATE cxx_std_17)
 
-# Ensure shader generation runs before building `velm` if the shader target exists.
-# The `velm_shaders` custom target is created by shaders/CMakeLists.txt when bgfx
-# shader compilation is configured.
 if(TARGET velm_shaders)
     add_dependencies(velm velm_shaders)
 endif()
@@ -40,7 +32,7 @@ target_link_libraries(velm
 )
 
 if(VELM_ENABLE_WINDOWING)
-    find_package(glfw3 QUIET)
+    find_package(glfw QUIET)
 
     # Resolve a usable target name from common variants so we avoid hard -lglfw3.
     set(GLFW_TARGET "")

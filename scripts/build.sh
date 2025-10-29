@@ -22,14 +22,15 @@ if command -v ccache >/dev/null 2>&1; then
     echo "Using ccache for faster rebuilds"
     export CCACHE_DIR="${CCACHE_DIR:-$HOME/.ccache}"
     mkdir -p "$CCACHE_DIR"
-    EXTRA_CMAKE_ARGS="-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+    EXTRA_CMAKE_ARGS="-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
 else
-    EXTRA_CMAKE_ARGS=""
+    EXTRA_CMAKE_ARGS="-DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
 fi
 
 # Configure project using preset
 echo "Configuring project with preset dev-debug..."
-if ! cmake --preset dev-debug ${EXTRA_CMAKE_ARGS} -S . -B "$BUILD_DIR"; then
+if ! cmake --preset dev-debug ${EXTRA_CMAKE_ARGS} -S . -B "$BUILD_DIR"
+then
     echo "CMake configuration failed"
     exit 1
 fi
@@ -37,7 +38,8 @@ echo "CMake configuration successful"
 
 # Build project using preset
 echo "Building project..."
-if ! cmake --build "$BUILD_DIR" --preset dev-debug-build --parallel "$CORES"; then
+if ! cmake --build "$BUILD_DIR" --preset dev-debug-build --parallel "$CORES"
+then
     echo "Build failed"
     exit 1
 fi

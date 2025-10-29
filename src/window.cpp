@@ -6,8 +6,6 @@
 #include <GLFW/glfw3native.h>
 #include <unistd.h>
 
-#include <iostream>
-
 void test_namespace::open_and_close() {
     if (!glfwInit()) {
         return;

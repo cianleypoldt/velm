@@ -1,38 +1,6 @@
-# Integrate shader compilation with bgfx's shaderc (via external/bgfx.cmake)
-#
-# This CMakeLists will:
-# - Locate .sc shader sources in this directory (vs_*.sc, fs_*.sc, cs_*.sc)
-# - Pick a varying.def.sc if present here, otherwise fall back to the bgfx-provided one
-# - Call bgfx_compile_shaders(...) for each shader type found
-# - Create a `velm_shaders` target that depends on the compiled shader outputs
-# - Expose `VELM_SHADER_INCLUDE_DIR` (path to generated headers) for downstream use
-#
-# Usage:
-# - Put shader sources in this directory (name vertex shaders `vs_*.sc`, fragments `fs_*.sc`, computes `cs_*.sc`)
-# - Optionally add a `varying.def.sc` to control varyings
-# - The compiled outputs (and generated headers if enabled) will be written into:
-#     ${CMAKE_BINARY_DIR}/include/generated/shaders
-#
-# Notes:
-# - Requires the bgfx cmake helper functions (bgfx_compile_shaders) which are provided
-#   by the `external/bgfx.cmake` subtree included by the top-level project.
-# - The default behavior is to also produce C headers (AS_HEADERS ON). Override with
-#   -DVELM_SHADERS_AS_HEADERS=OFF on the cmake command line if you do not want headers.
+cmake_minimum_required(VERSION 3.24)
 
-cmake_minimum_required(VERSION 3.14)
-
-# Allow overriding from the top-level project or the user
-if(NOT DEFINED VELM_SHADERS_AS_HEADERS)
-    option(VELM_SHADERS_AS_HEADERS "Produce compiled shader headers (.bin.h) in addition to binary outputs" ON)
-endif()
-
-# Output directory for compiled shaders and headers
-if(NOT DEFINED VELM_SHADERS_OUTPUT_DIR)
-    set(VELM_SHADERS_OUTPUT_DIR "${CMAKE_BINARY_DIR}/include/generated/shaders" CACHE PATH "Directory where compiled shaders will be placed")
-endif()
-
-# Expose include dir variable for other targets (useful when AS_HEADERS is ON)
-set(VELM_SHADER_INCLUDE_DIR "${VELM_SHADERS_OUTPUT_DIR}" CACHE PATH "Include directory with generated shader headers")
+set(VELM_SHADERS_OUTPUT_DIR "${CMAKE_BINARY_DIR}/include/generated/shaders" CACHE PATH "Directory where compiled shaders will be placed")
 
 # Helper: locate varying.def.sc
 set(VELM_VARYING_DEF "")
