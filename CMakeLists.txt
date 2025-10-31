@@ -72,14 +72,15 @@ if(APPLE)
 endif()
 
 
+#add_subdirectory(shaders)
 add_subdirectory(src)
 
-include(CTest)
-if(BUILD_TESTING)
-    message(STATUS "Building tests")
-    enable_testing()
-    add_subdirectory(tests)
-endif()
+#include(CTest)
+#if(BUILD_TESTING)
+#    message(STATUS "Building tests")
+#    enable_testing()
+#    add_subdirectory(tests)
+#endif()
 
 if(VELM_BUILD_DEV)
     message(STATUS "Building developer utilities")

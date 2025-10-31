@@ -1,7 +1,4 @@
-add_library(velm
-            hdf5.cpp
-            window.cpp
-            )
+add_library(velm hdf5.cpp)
 
 target_include_directories(velm PRIVATE  .)
 target_include_directories(velm PUBLIC ../include)
@@ -24,8 +21,20 @@ if(VELM_ENABLE_HDF5)
     target_include_directories(velm PRIVATE ${HDF5_INCLUDE_DIRS})
 endif()
 
+# Find GLM
+find_package(glm REQUIRED)
+
+# Link GLM - handle both system package and fetched content cases
+if(TARGET glm::glm)
+    target_link_libraries(velm PUBLIC glm::glm)
+elseif(TARGET glm)
+    target_link_libraries(velm PUBLIC glm)
+else()
+    message(FATAL_ERROR "GLM not found and unable to fetch from source")
+endif()
+
 target_link_libraries(velm
-    PRIVATE
+    PUBLIC
         bgfx
         bimg
         bx
@@ -65,7 +74,7 @@ if(VELM_ENABLE_WINDOWING)
     endif()
 
     if (GLFW_TARGET)
-        target_link_libraries(velm PRIVATE ${GLFW_TARGET})
+        target_link_libraries(velm PUBLIC ${GLFW_TARGET})
     else()
         message(WARNING "GLFW not found; windowing support disabled for velm target")
     endif()
