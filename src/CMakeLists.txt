@@ -1,4 +1,4 @@
-add_library(velm hdf5.cpp)
+add_library(velm hdf5.cpp hdf5.cpp scene.cpp)
 
 target_include_directories(velm PRIVATE  .)
 target_include_directories(velm PUBLIC ../include)
