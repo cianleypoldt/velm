@@ -1,4 +1,4 @@
-#include "velm/shader_system.h"
+#include "shader_system.h"
 
 #include "bgfx/bgfx.h"
 #include "bx/file.h"
@@ -20,20 +20,23 @@ void velm_shadersys::load_all() {
             shaderPath = "shaders/metal/";
             break;
         case bgfx::RendererType::OpenGL:
-        case bgfx::RendererType::OpenGLES:
             shaderPath = "shaders/glsl/";
+            break;
+        case bgfx::RendererType::OpenGLES:
+            shaderPath = "shaders/essl/";
             break;
         default:
             abort();
             return;
     };
     std::filesystem::path shader_dir(shaderPath);  // Get st path in shader list of .sc files
-    std::cout << "Accessing shader directory at: " << std::filesystem::absolute(shader_dir) << std::endl;
+    std::cout << "velm_shadersys: Accessing shader directory at: " << std::filesystem::absolute(shader_dir) << "\n";
 
     for (const auto & entry : std::filesystem::directory_iterator(shader_dir)) {
         if (entry.path().extension() == ".bin") {
             std::string shader_name = entry.path().stem().string();
-            std::cout << "Loading shader from: " << std::filesystem::absolute(entry.path()) << std::endl;
+            std::cout << "velm_shadersys: Loading shader \"" << shader_name
+                      << "\" from: " << std::filesystem::absolute(entry.path()) << "\n";
 
             // Load shader file
             bx::FileReader reader;
@@ -53,6 +56,9 @@ void velm_shadersys::load_all() {
                 bgfx::ShaderHandle handle = bgfx::createShader(mem);
 
                 if (bgfx::isValid(handle)) {
+                    // Set shader name for debug output
+                    bgfx::setName(handle, shader_name.c_str());
+
                     // Add to shader collection
                     shaders.push_back(std::make_pair(shader_name, handle));
                 }
@@ -63,7 +69,7 @@ void velm_shadersys::load_all() {
 
 void velm_shadersys::destroy_all() {
     for (int i = 0; i < shaders.size(); i++) {
-        std::cout << "Shader system: Destroying shader " << shaders[i].first << "\n";
+        std::cout << "velm_shadersys: Destroying shader " << shaders[i].first << "\n";
         bgfx::destroy(shaders[i].second);
     }
 }

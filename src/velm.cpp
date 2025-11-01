@@ -2,6 +2,9 @@
 
 #include "bgfx/bgfx.h"
 #include "bx/platform.h"
+#include "shader_system.h"
+
+#include <memory>
 
 #if BX_PLATFORM_LINUX
 #    define GLFW_EXPOSE_NATIVE_X11
@@ -15,6 +18,7 @@
 #endif
 #include "GLFW/glfw3.h"
 #include "GLFW/glfw3native.h"
+#include "velm/scene.h"
 
 velm::Velm::Velm() {
     glfwInit();
@@ -54,9 +58,17 @@ velm::Velm::Velm() {
     }
 
     velm_shadersys::load_all();
+    auto vert = velm_shadersys::retrieve("vs_basic.sc");
+    auto frag = velm_shadersys::retrieve("fs_basic.sc");
 }
 
 velm::Velm::~Velm() {
     velm_shadersys::destroy_all();
     bgfx::shutdown();
+}
+
+std::shared_ptr<velm::Scene> velm::Velm::create_scene() {
+    auto scene = std::make_shared<velm::Scene>();
+    scenes.push_back(std::weak_ptr<velm::Scene>(scene));
+    return scene;
 }

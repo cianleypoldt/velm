@@ -4,7 +4,6 @@
 
 #    include <cstddef>
 #    include <cstring>
-#    include <string>
 #    include <vector>
 
 namespace H5 {
@@ -18,7 +17,7 @@ using hdf5_dataset = int;
 
 class hdf5_file {
   public:
-    hdf5_file(const std::string_view & filename);
+    hdf5_file(const std::string_view & file_name);
     ~hdf5_file();
 
     // Move-only semantics

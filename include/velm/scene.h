@@ -36,12 +36,12 @@ struct mesh {
 }  // namespace velm_render
 
 namespace velm {
-class scene {
+class Scene {
     std::vector<velm_render::view>   views;
     std::vector<velm_render::mesh *> meshes;
   public:
-    scene();
-    ~scene();
+    Scene();
+    ~Scene();
     void add_mesh();
     void add_view();
 };
