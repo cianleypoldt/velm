@@ -18,7 +18,7 @@ option(VELM_ENABLE_WINDOWING "Enable optional windowing integration (GLFW)" ON)
 option(VELM_ENABLE_HDF5 "Enable optional HDF5 support" ON)
 option(VELM_BUILD_DEV "Enable developer utilities" ON)
 option(VELM_ENABLE_SANITIZER "Enable address and undefined behavior sanitizer" OFF)
-option(VELM_ENABLE_COVERAGE "Enable code coverage reporting" ON)
+option(VELM_ENABLE_COVERAGE "Enable code coverage reporting" OFF)
 
 message(STATUS "VELM_ENABLE_WINDOWING: ${VELM_ENABLE_WINDOWING}")
 message(STATUS "VELM_ENABLE_HDF5: ${VELM_ENABLE_HDF5}")

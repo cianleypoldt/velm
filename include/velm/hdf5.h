@@ -1,4 +1,5 @@
 #pragma once
+#include <string_view>
 #ifdef VELM_ENABLE_HDF5
 
 #    include <cstddef>
@@ -6,15 +7,10 @@
 #    include <string>
 #    include <vector>
 
-#    ifdef USE_MOCK_HDF5
-// Forward declaration for mock implementation
-struct H5FileWrapper;
-#    else
-// Forward declaration for H5 namespace
 namespace H5 {
 class H5File;
 }
-#    endif
+#endif
 
 namespace velm {
 
@@ -22,7 +18,7 @@ using hdf5_dataset = int;
 
 class hdf5_file {
   public:
-    explicit hdf5_file(const char * filename);
+    hdf5_file(const std::string_view & filename);
     ~hdf5_file();
 
     // Move-only semantics
@@ -31,21 +27,16 @@ class hdf5_file {
     hdf5_file(hdf5_file && other) noexcept;
     hdf5_file & operator=(hdf5_file && other) noexcept;
 
-    [[nodiscard]] std::vector<std::string> list_datasets() const;
-    [[nodiscard]] std::vector<std::size_t> get_dataset_shape(const char * name) const;
+    [[nodiscard]] std::vector<std::string_view> list_datasets() const;
+    [[nodiscard]] std::vector<std::size_t>      get_dataset_shape(const std::string_view & name) const;
 
-    [[nodiscard]] const char * get_filename() const { return filename_; }
+    [[nodiscard]] std::string_view get_filename() const { return filename_; }
 
-    void load_dataset(void * buffer, const char * name) const;
+    void load_dataset(void * buffer, const std::string_view & name) const;
 
   private:
-#    ifdef USE_MOCK_HDF5
-    H5FileWrapper * file_;
-#    else
-    H5::H5File * file_;
-#    endif
-    const char * filename_;
+    H5::H5File *     file_;
+    std::string_view filename_;
 };
 
 }  // namespace velm
-#endif

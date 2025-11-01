@@ -1,4 +1,4 @@
-add_library(velm hdf5.cpp hdf5.cpp scene.cpp)
+add_library(velm hdf5.cpp hdf5.cpp scene.cpp velm.cpp window.cpp shader_system.cpp)
 
 target_include_directories(velm PRIVATE  .)
 target_include_directories(velm PUBLIC ../include)
@@ -9,7 +9,7 @@ if(DEFINED VELM_SHADER_INCLUDE_DIR)
     target_compile_definitions(velm PUBLIC VELM_SHADER_HEADERS_AVAILABLE=1)
 endif()
 
-target_compile_features(velm PRIVATE cxx_std_17)
+target_compile_features(velm PRIVATE cxx_std_20)
 
 if(TARGET velm_shaders)
     add_dependencies(velm velm_shaders)

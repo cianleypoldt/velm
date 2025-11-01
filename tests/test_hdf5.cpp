@@ -13,39 +13,39 @@ namespace fs = std::filesystem;
 
 class HDF5Test : public ::testing::Test {
   protected:
-    static std::string GetTestFilePath() {
+    static std::string_view GetTestFilePath() {
         // Construct the path to the test file
-        fs::path test_file = fs::path(__FILE__).parent_path() / "res" / "test_file.h5";
-        return test_file.string();
+        static std::string path = (fs::path(__FILE__).parent_path() / "res" / "test_file.h5").string();
+        return path;
     }
 };
 
 TEST_F(HDF5Test, FileOpening) {
     // Test that we can open the test file
-    EXPECT_NO_THROW({ velm::hdf5_file file(GetTestFilePath().c_str()); });
+    EXPECT_NO_THROW({ velm::hdf5_file file(GetTestFilePath()); });
 }
 
 TEST_F(HDF5Test, MoveSemantics) {
     // Test move constructor
-    velm::hdf5_file file1(GetTestFilePath().c_str());
+    velm::hdf5_file file1(GetTestFilePath());
     velm::hdf5_file file2(std::move(file1));
 
     // Test that file2 has the content now
-    EXPECT_STREQ(file2.get_filename(), GetTestFilePath().c_str());
+    EXPECT_EQ(file2.get_filename(), GetTestFilePath());
 
     // Test move assignment
-    velm::hdf5_file file3(GetTestFilePath().c_str());
+    velm::hdf5_file file3(GetTestFilePath());
     file3 = std::move(file2);
 
     // Verify the content has moved
-    EXPECT_STREQ(file3.get_filename(), GetTestFilePath().c_str());
+    EXPECT_EQ(file3.get_filename(), GetTestFilePath());
 }
 
 TEST_F(HDF5Test, ListDatasets) {
-    velm::hdf5_file file(GetTestFilePath().c_str());
+    velm::hdf5_file file(GetTestFilePath());
 
     // List all datasets in the file
-    std::vector<std::string> datasets = file.list_datasets();
+    auto datasets = file.list_datasets();
 
     // Verify we have datasets
     EXPECT_FALSE(datasets.empty());
@@ -55,18 +55,18 @@ TEST_F(HDF5Test, ListDatasets) {
     for (const auto & ds : datasets) {
         std::cout << ds << " ";
     }
-    std::cout << std::endl;
+    std::cout << '\n';
 }
 
 TEST_F(HDF5Test, GetDatasetShape) {
-    velm::hdf5_file file(GetTestFilePath().c_str());
+    velm::hdf5_file file(GetTestFilePath());
 
     // Get all datasets
-    std::vector<std::string> datasets = file.list_datasets();
+    auto datasets = file.list_datasets();
 
     // Check the shape of each dataset
     for (const auto & ds : datasets) {
-        std::vector<std::size_t> shape = file.get_dataset_shape(ds.c_str());
+        std::vector<std::size_t> shape = file.get_dataset_shape(ds);
 
         // Verify the shape is non-empty
         EXPECT_FALSE(shape.empty());
@@ -76,20 +76,20 @@ TEST_F(HDF5Test, GetDatasetShape) {
         for (size_t dim : shape) {
             std::cout << dim << " ";
         }
-        std::cout << std::endl;
+        std::cout << '\n';
     }
 }
 
 TEST_F(HDF5Test, LoadDataset) {
-    velm::hdf5_file file(GetTestFilePath().c_str());
+    velm::hdf5_file file(GetTestFilePath());
 
     // Get all datasets
-    std::vector<std::string> datasets = file.list_datasets();
+    auto datasets = file.list_datasets();
 
     // Try to load each dataset
     for (const auto & ds : datasets) {
         // Get dataset shape first
-        std::vector<std::size_t> shape = file.get_dataset_shape(ds.c_str());
+        std::vector<std::size_t> shape = file.get_dataset_shape(ds);
         if (shape.empty()) {
             continue;
         }
@@ -106,20 +106,20 @@ TEST_F(HDF5Test, LoadDataset) {
         std::vector<char> buffer(total_elements * sizeof(double));
 
         // Load the dataset
-        EXPECT_NO_THROW({ file.load_dataset(buffer.data(), ds.c_str()); });
+        EXPECT_NO_THROW({ file.load_dataset(buffer.data(), ds); });
     }
 }
 
 // Compound data type test
 TEST_F(HDF5Test, CompoundDataType) {
-    velm::hdf5_file file(GetTestFilePath().c_str());
+    velm::hdf5_file file(GetTestFilePath());
 
     // Look for the field dataset which contains complex data
-    std::string dataset_name = "/background/field";
+    std::string_view dataset_name = "/background/field";
 
     try {
         // Get shape of the field dataset
-        std::vector<std::size_t> shape = file.get_dataset_shape(dataset_name.c_str());
+        std::vector<std::size_t> shape = file.get_dataset_shape(dataset_name);
         if (!shape.empty()) {
             // Calculate total elements
             size_t total_elements = 1;
@@ -131,7 +131,7 @@ TEST_F(HDF5Test, CompoundDataType) {
             std::vector<std::complex<double>> buffer(total_elements);
 
             // Load the dataset
-            file.load_dataset(buffer.data(), dataset_name.c_str());
+            file.load_dataset(buffer.data(), dataset_name);
 
             // Verify data is loaded
             bool has_nonzero = false;
@@ -153,7 +153,7 @@ TEST_F(HDF5Test, CompoundDataType) {
         }
     } catch (const std::exception & e) {
         // Log and fail if there's an error
-        std::cerr << "Exception testing compound data type: " << e.what() << std::endl;
+        std::cerr << "Exception testing compound data type: " << e.what() << '\n';
         FAIL() << "Exception during compound data type test: " << e.what();
     }
 }
@@ -161,9 +161,9 @@ TEST_F(HDF5Test, CompoundDataType) {
 // Test error handling
 TEST_F(HDF5Test, ErrorHandling) {
     // Test opening a non-existent file
-    EXPECT_ANY_THROW({ velm::hdf5_file file("this_file_does_not_exist.h5"); });
+    EXPECT_ANY_THROW({ velm::hdf5_file file(std::string_view("this_file_does_not_exist.h5")); });
 
-    velm::hdf5_file file(GetTestFilePath().c_str());
+    velm::hdf5_file file(GetTestFilePath());
 
     // Test getting shape of non-existent dataset
     EXPECT_ANY_THROW({ file.get_dataset_shape("non_existent_dataset"); });
@@ -175,24 +175,24 @@ TEST_F(HDF5Test, ErrorHandling) {
 
 // Test for integration with ndarray
 TEST_F(HDF5Test, NdarrayIntegration) {
-    velm::hdf5_file file(GetTestFilePath().c_str());
+    velm::hdf5_file file(GetTestFilePath());
 
     // Try to load data into ndarray
     try {
         // Look for a dataset
-        std::vector<std::string> datasets = file.list_datasets();
+        auto datasets = file.list_datasets();
         if (!datasets.empty()) {
-            std::string dataset_name = datasets[0];
+            std::string_view dataset_name = datasets[0];
 
             // Get shape
-            std::vector<std::size_t> shape = file.get_dataset_shape(dataset_name.c_str());
+            std::vector<std::size_t> shape = file.get_dataset_shape(dataset_name);
             if (shape.size() == 1) {
                 // Create ndarray with appropriate dimensions
                 size_t                      dim = shape[0];
                 velm_DR::ndarray<double, 1> arr(dim);
 
                 // Load data
-                file.load_dataset(arr.data, dataset_name.c_str());
+                file.load_dataset(arr.data, dataset_name);
 
                 // Check that data was loaded
                 bool has_nonzero = false;
@@ -208,7 +208,7 @@ TEST_F(HDF5Test, NdarrayIntegration) {
                 for (size_t i = 0; i < std::min(size_t(5), dim); ++i) {
                     std::cout << arr(i) << " ";
                 }
-                std::cout << std::endl;
+                std::cout << '\n';
             } else if (shape.size() == 2) {
                 // Create 2D ndarray
                 size_t                      dim1 = shape[0];
@@ -216,7 +216,7 @@ TEST_F(HDF5Test, NdarrayIntegration) {
                 velm_DR::ndarray<double, 2> arr(dim1, dim2);
 
                 // Load data
-                file.load_dataset(arr.data, dataset_name.c_str());
+                file.load_dataset(arr.data, dataset_name);
 
                 // Check and print some sample values
                 std::cout << "Sample values from " << dataset_name << " loaded into 2D ndarray:\n";
@@ -224,12 +224,12 @@ TEST_F(HDF5Test, NdarrayIntegration) {
                     for (size_t j = 0; j < std::min(size_t(2), dim2); ++j) {
                         std::cout << arr(i, j) << " ";
                     }
-                    std::cout << std::endl;
+                    std::cout << '\n';
                 }
             }
         }
     } catch (const std::exception & e) {
-        std::cerr << "Exception in ndarray integration test: " << e.what() << std::endl;
+        std::cerr << "Exception in ndarray integration test: " << e.what() << '\n';
         FAIL() << "Exception during ndarray integration test: " << e.what();
     }
 }

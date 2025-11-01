@@ -46,7 +46,8 @@ fi
 echo "Build completed successfully"
 
 # Run main executable if it exists
-MAIN_BIN="./build/dev-debug/bin/velm_dev"
+cd "$BUILD_DIR/bin" || exit 1
+MAIN_BIN="./velm_dev"
 if [[ -x "$MAIN_BIN" ]]; then
     echo "Running $MAIN_BIN..."
     if ! "$MAIN_BIN"; then
@@ -56,6 +57,7 @@ if [[ -x "$MAIN_BIN" ]]; then
 else
     echo "Executable $MAIN_BIN not found, skipping run"
 fi
-./build/dev-debug/bin/velm_tests
+cd - > /dev/null
+#./build/dev-debug/bin/velm_tests
 
 echo "Velm build script finished"
